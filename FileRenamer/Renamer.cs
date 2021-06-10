@@ -13,6 +13,7 @@ namespace FileRenamer {
         private readonly FileSystemWatcher[] watchers;
 
         public Renamer() {
+            bool doSubdirs = ConfigurationManager.AppSettings["DoSubdirs"].Trim(new char[] { ' ' }).ToLower().Equals("true");
             string[] paths = ConfigurationManager.AppSettings["FilePath"].Split(';');
             File.AppendAllText(@"C:\Temp\Demos\FileRename.txt", "Watching " + paths.Length + " directories\n");
 
@@ -36,7 +37,7 @@ namespace FileRenamer {
                 watcher.Created += new FileSystemEventHandler(OnCreated);
                 watcher.Renamed += new RenamedEventHandler(OnRenamed);
                 watcher.Error += new ErrorEventHandler(OnError);
-                watcher.IncludeSubdirectories = true;
+                watcher.IncludeSubdirectories = doSubdirs;
                 watcher.EnableRaisingEvents = true;
                 watchers[i] = watcher;
             }
