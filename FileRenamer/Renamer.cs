@@ -10,7 +10,7 @@ using System.Collections;
 
 namespace FileRenamer {
     public class Renamer {
-        private readonly FileSystemWatcher watcher;// = new FileSystemWatcher();
+        private FileSystemWatcher watcher;// = new FileSystemWatcher();
 
         public Renamer() {
             string path = ConfigurationManager.AppSettings["FilePath"];
@@ -93,7 +93,7 @@ namespace FileRenamer {
         }
 
         public void Start() {
-            watcher.BeginInit();
+            //Do nothing on start
         }
 
         public void Stop() {
