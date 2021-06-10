@@ -10,27 +10,35 @@ using System.Collections;
 
 namespace FileRenamer {
     public class Renamer {
-        private FileSystemWatcher watcher;// = new FileSystemWatcher();
+        private readonly FileSystemWatcher[] watchers;
 
         public Renamer() {
-            string path = ConfigurationManager.AppSettings["FilePath"];
-            File.AppendAllText(@"C:\Temp\Demos\FileRename.txt", "Watching " + path + " directory\n");
+            string[] paths = ConfigurationManager.AppSettings["FilePath"].Split(';');
+            File.AppendAllText(@"C:\Temp\Demos\FileRename.txt", "Watching " + paths.Length + " directories\n");
 
-            watcher = new FileSystemWatcher(@path);
-            watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastAccess |
-                                    NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.Security;
-            watcher.Changed += new FileSystemEventHandler(OnChanged);
-            watcher.Created += new FileSystemEventHandler(OnCreated);
-            watcher.Renamed += new RenamedEventHandler(OnRenamed);
-            watcher.Error += new ErrorEventHandler(OnError);
-            watcher.IncludeSubdirectories = true;
-            watcher.EnableRaisingEvents = true;
-
-            foreach (string file in Directory.GetFiles(path)) {
-                CheckName(file);
+            foreach (string path in paths) {
+                foreach (string subdir in Directory.GetDirectories(path)) {
+                    foreach (string file in Directory.GetFiles(subdir)) {
+                        CheckName(file);
+                    }
+                }
+                foreach (string file in Directory.GetFiles(path)) {
+                    CheckName(file);
+                }
             }
-            foreach (string file in Directory.GetFiles(path)) {
-                CheckName(file);
+
+            watchers = new FileSystemWatcher[paths.Length];
+            for (int i = 0; i < paths.Length; i++) {
+                FileSystemWatcher watcher = new FileSystemWatcher(@paths[i]);
+                watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastAccess |
+                                        NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.Security;
+                watcher.Changed += new FileSystemEventHandler(OnChanged);
+                watcher.Created += new FileSystemEventHandler(OnCreated);
+                watcher.Renamed += new RenamedEventHandler(OnRenamed);
+                watcher.Error += new ErrorEventHandler(OnError);
+                watcher.IncludeSubdirectories = true;
+                watcher.EnableRaisingEvents = true;
+                watchers[i] = watcher;
             }
         }
 
@@ -39,20 +47,32 @@ namespace FileRenamer {
                 return;
             }
             File.AppendAllText(@"C:\Temp\Demos\FileRename.txt", "Found " + e.FullPath + "\n");
+
             //Start rename
+            FileSystemWatcher watcher = (FileSystemWatcher) sender;
+            watcher.EnableRaisingEvents = false;
             CheckName(e.FullPath);
+            watcher.EnableRaisingEvents = true;
         }
 
         private static void OnCreated(object sender, FileSystemEventArgs e) {
             File.AppendAllText(@"C:\Temp\Demos\FileRename.txt", "Found " + e.FullPath + "\n");
+
             //Start rename
+            FileSystemWatcher watcher = (FileSystemWatcher)sender;
+            watcher.EnableRaisingEvents = false;
             CheckName(e.FullPath);
+            watcher.EnableRaisingEvents = true;
         }
 
         private static void OnRenamed(object sender, FileSystemEventArgs e) {
             File.AppendAllText(@"C:\Temp\Demos\FileRename.txt", "Found " + e.FullPath + "\n");
+
             //Start rename
+            FileSystemWatcher watcher = (FileSystemWatcher)sender;
+            watcher.EnableRaisingEvents = false;
             CheckName(e.FullPath);
+            watcher.EnableRaisingEvents = true;
         }
 
         private static void CheckName(string path) {
@@ -72,10 +92,10 @@ namespace FileRenamer {
             if (name.CompareTo(sb.ToString()) != 0) {
                 if (File.Exists(newPath)) {
                     int ct = 1;
-                    string fixPath = Path.Combine(Path.GetDirectoryName(newPath), sb.ToString()) + "_(" + ct + ")" + Path.GetExtension(newPath);
+                    string fixPath = Path.Combine(Path.GetDirectoryName(newPath), sb.ToString()) + "(" + ct + ")" + Path.GetExtension(newPath);
                     while (File.Exists(fixPath)) {
                         ct++;
-                        fixPath = Path.Combine(Path.GetDirectoryName(newPath), sb.ToString()) + "_(" + ct + ")" + Path.GetExtension(newPath);
+                        fixPath = Path.Combine(Path.GetDirectoryName(newPath), sb.ToString()) + "(" + ct + ")" + Path.GetExtension(newPath);
                     }
                     newPath = fixPath;
                 }
